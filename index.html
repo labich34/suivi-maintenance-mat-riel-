@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#c8102e">
+<link rel="manifest" href="manifest.json">
+<title>Entretiens Resto</title>
+<style>
+:root {
+  --bg: #f5f5f0; --card: #fff; --tx: #1a1a18; --tx2: #6b6b66; --bd: #e0e0da;
+  --ac: #c8102e; --ac2: #a00d24; --red: #d92d20; --ora: #e8880a; --grn: #12b76a;
+  --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  color-scheme: light dark;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#18181a;--card:#242426;--tx:#f0f0ec;--tx2:#9a9a94;--bd:#3a3a38;
+  --shadow:0 1px 3px rgba(0,0,0,.3);
+}}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--tx);-webkit-tap-highlight-color:transparent;
+  padding-bottom:env(safe-area-inset-bottom,0)}
+button,input,select,textarea{font:inherit;color:var(--tx)}
+a{color:var(--ac)}
+
+/* ── NAV ── */
+.nav{display:flex;background:var(--ac);color:#fff;padding:0;position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:10px 4px 8px;font-size:11px;font-weight:600;border:0;background:0;color:rgba(255,255,255,.7);cursor:pointer}
+.nav-item.on{color:#fff;background:rgba(0,0,0,.15)}
+.nav-item svg{width:22px;height:22px}
+
+/* ── LAYOUT ── */
+.wrap{max-width:900px;margin:0 auto;padding:0 12px}
+.page{display:none}.page.on{display:block}
+h2{font-size:18px;margin:16px 0 8px}
+
+/* ── TABS RESTO ── */
+.rtabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;-webkit-overflow-scrolling:touch}
+.rtab{white-space:nowrap;padding:8px 14px;border-radius:20px;border:1.5px solid var(--bd);
+  background:var(--card);font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;gap:6px;min-height:40px}
+.rtab.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;
+  padding:0 5px;border-radius:10px;font-size:11px;font-weight:700;color:#fff}
+.badge.r{background:var(--red)}.badge.o{background:var(--ora)}
+
+/* ── SEARCH BAR ── */
+.sbar{display:flex;gap:8px;padding:8px 0;flex-wrap:wrap}
+.sbar input,.sbar select{min-height:44px;padding:0 12px;border:1.5px solid var(--bd);
+  border-radius:10px;background:var(--card);flex:1;min-width:140px}
+.sbar select{min-width:120px;flex:0 1 auto}
+.count{font-size:13px;color:var(--tx2);padding:0 0 6px}
+
+/* ── TASK CARDS ── */
+.tcard{background:var(--card);border:1.5px solid var(--bd);border-radius:var(--radius);
+  padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;
+  box-shadow:var(--shadow)}
+.tcard .info{flex:1;min-width:0}
+.tcard .eq{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcard .tk{font-size:13px;color:var(--tx2);margin-top:1px}
+.tcard .meta{font-size:12px;color:var(--tx2);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
+.pill.late{background:var(--red)}.pill.soon{background:var(--ora)}.pill.ok{background:var(--grn)}
+.tcard .acts{display:flex;gap:6px;flex-shrink:0}
+
+/* ── BUTTONS ── */
+.btn{min-height:44px;padding:0 16px;border:1.5px solid var(--bd);border-radius:10px;
+  background:var(--card);cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700}
+.btn.p:active{background:var(--ac2)}
+.btn.sm{min-height:36px;padding:0 10px;font-size:13px}
+.btn.icon{min-height:44px;width:44px;padding:0;justify-content:center;font-size:18px}
+.btn.ghost{border-color:transparent;background:transparent}
+
+/* ── DIALOG ── */
+dialog{border:1.5px solid var(--bd);border-radius:16px;background:var(--card);color:var(--tx);
+  max-width:480px;width:calc(100% - 24px);padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h3{margin:0 0 12px;font-size:17px}
+.field{margin:10px 0}
+.field label{display:block;font-size:13px;color:var(--tx2);margin-bottom:4px}
+.field input,.field select{width:100%;min-height:44px;padding:0 12px;border:1.5px solid var(--bd);
+  border-radius:10px;background:var(--bg)}
+.field textarea{width:100%;min-height:60px;padding:10px 12px;border:1.5px solid var(--bd);
+  border-radius:10px;background:var(--bg);resize:vertical}
+.drow{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
+
+/* ── EQUIPMENT LIST ── */
+.eqcard{background:var(--card);border:1.5px solid var(--bd);border-radius:var(--radius);
+  padding:14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow)}
+.eqcard:active{background:var(--bg)}
+.eqcard .name{font-weight:700;font-size:15px}
+.eqcard .sub{font-size:13px;color:var(--tx2);margin-top:2px}
+.eqcard .badges{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+
+/* ── EQUIPMENT DETAIL ── */
+.detail-head{background:var(--card);border:1.5px solid var(--bd);border-radius:var(--radius);
+  padding:14px;margin:12px 0;box-shadow:var(--shadow)}
+.detail-head h3{margin:0;font-size:17px}
+.detail-head .sub{font-size:13px;color:var(--tx2);margin-top:4px}
+.htask{background:var(--card);border:1.5px solid var(--bd);border-radius:var(--radius);
+  padding:12px;margin-bottom:8px;box-shadow:var(--shadow)}
+.htask .hdr{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.htask .hdr .name{font-weight:700;font-size:14px}
+.hexec{padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hexec:last-child{border-bottom:0}
+
+/* ── SETTINGS ── */
+.setting-group{background:var(--card);border:1.5px solid var(--bd);border-radius:var(--radius);
+  padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.setting-group h3{margin:0 0 10px;font-size:15px}
+.setting-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;
+  background:var(--bg);font-size:13px;border:1px solid var(--bd)}
+.chip button{background:0;border:0;color:var(--red);font-size:16px;cursor:pointer;padding:0 2px}
+
+/* ── TOAST ── */
+#toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:14px;
+  display:none;align-items:center;gap:12px;z-index:99;max-width:92%;
+  box-shadow:0 4px 20px rgba(0,0,0,.3);font-size:14px}
+#toast .ubtn{min-height:32px;padding:0 12px;background:#fff;color:#222;border:0;
+  border-radius:8px;font-weight:600;cursor:pointer;font-size:13px}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 16px;color:var(--tx2)}
+.empty svg{width:48px;height:48px;opacity:.4;margin-bottom:8px}
+
+@media(min-width:600px){
+  .tcard{padding:14px 16px}
+  .wrap{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<div id="app">
+
+<!-- PAGE: À FAIRE -->
+<div class="page on" id="pgTodo">
+<div class="wrap">
+  <h2>🔧 À faire</h2>
+  <div class="rtabs" id="rtabs"></div>
+  <div class="sbar">
+    <input id="qSearch" type="search" placeholder="Rechercher…">
+    <select id="fStatus"><option value="">Tous</option><option value="late">🔴 En retard</option><option value="soon">🟠 Bientôt</option><option value="ok">🟢 OK</option></select>
+  </div>
+  <div class="count" id="todoCount"></div>
+  <div id="todoList"></div>
+</div>
+</div>
+
+<!-- PAGE: ÉQUIPEMENTS -->
+<div class="page" id="pgEquip">
+<div class="wrap">
+  <h2>📦 Équipements</h2>
+  <div class="rtabs" id="rtabs2"></div>
+  <div class="sbar">
+    <input id="qEquip" type="search" placeholder="Rechercher un équipement…">
+    <select id="fCat"><option value="">Toutes catégories</option></select>
+    <button class="btn sm" onclick="openAddEquip()">+ Ajouter</button>
+  </div>
+  <div class="count" id="eqCount"></div>
+  <div id="eqList"></div>
+</div>
+</div>
+
+<!-- PAGE: FICHE ÉQUIPEMENT -->
+<div class="page" id="pgDetail">
+<div class="wrap">
+  <div style="padding:12px 0">
+    <button class="btn sm" onclick="showPage('pgEquip')">← Retour</button>
+  </div>
+  <div id="detailContent"></div>
+</div>
+</div>
+
+<!-- PAGE: RÉGLAGES -->
+<div class="page" id="pgSettings">
+<div class="wrap">
+  <h2>⚙️ Réglages</h2>
+
+  <div class="setting-group">
+    <h3>Utilisateur</h3>
+    <div class="field">
+      <label>Nom affiché</label>
+      <input id="userName" placeholder="Ex: Khalid">
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h3>Remarques fréquentes</h3>
+    <div id="remList"></div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <input id="newRem" placeholder="Nouvelle remarque…" style="flex:1;min-height:40px;padding:0 10px;border:1.5px solid var(--bd);border-radius:8px;background:var(--bg)">
+      <button class="btn sm" onclick="addRemarque()">+</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h3>Export</h3>
+    <div class="setting-row">
+      <button class="btn" onclick="exportCSV()">📄 CSV</button>
+      <button class="btn" onclick="exportJSON()">💾 JSON</button>
+      <button class="btn" onclick="exportExcel()">📊 Excel</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h3>Import</h3>
+    <div class="setting-row">
+      <button class="btn" onclick="triggerImport('replace')">📥 Remplacer</button>
+      <button class="btn" onclick="triggerImport('merge')">🔀 Fusionner</button>
+    </div>
+    <p style="font-size:12px;color:var(--tx2);margin:6px 0 0">Import JSON : « Remplacer » écrase tout, « Fusionner » ajoute les nouveaux éléments.</p>
+    <input type="file" id="importFile" accept=".json" hidden>
+  </div>
+
+  <div class="setting-group">
+    <h3>Données</h3>
+    <div id="statsInfo"></div>
+    <div class="setting-row" style="margin-top:10px">
+      <button class="btn" onclick="resetData()" style="color:var(--red)">🗑 Réinitialiser</button>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <h3>À propos</h3>
+    <p style="font-size:13px;color:var(--tx2);margin:0">Entretiens Resto v1.0 — Safely simplifié<br>Données stockées dans ce navigateur (localStorage).<br>Pensez à exporter régulièrement !</p>
+  </div>
+</div>
+</div>
+
+</div><!-- /app -->
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="nav" id="bnav">
+  <button class="nav-item on" data-pg="pgTodo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    À faire
+  </button>
+  <button class="nav-item" data-pg="pgEquip">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+    Équipements
+  </button>
+  <button class="nav-item" data-pg="pgSettings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    Réglages
+  </button>
+</nav>
+
+<!-- ═══ DIALOGS ═══ -->
+<dialog id="dlgConfirm">
+  <h3 id="dlgTitle"></h3>
+  <div class="field"><label>Date d'exécution</label><input type="date" id="dlgDate"></div>
+  <div class="field"><label>Type</label>
+    <select id="dlgType"><option>Interne</option><option>Externe</option></select>
+  </div>
+  <div class="field"><label>Remarque fréquente</label><select id="dlgRem"></select></div>
+  <div class="field"><label>Remarque libre</label><input id="dlgFree" placeholder="Facultatif"></div>
+  <div class="drow">
+    <button class="btn" onclick="dlgConfirm.close()">Annuler</button>
+    <button class="btn p" onclick="submitConfirm()">✓ Confirmer</button>
+  </div>
+</dialog>
+
+<dialog id="dlgEquipForm">
+  <h3 id="eqFormTitle">Ajouter un équipement</h3>
+  <div class="field"><label>Restaurant</label><select id="eqFormResto"></select></div>
+  <div class="field"><label>Nom</label><input id="eqFormNom" placeholder="Ex: Toaster L1"></div>
+  <div class="field"><label>N° inventaire</label><input id="eqFormInv" placeholder="Facultatif"></div>
+  <div class="field"><label>Catégorie</label><input id="eqFormCat" placeholder="Ex: Cuisine, Froid, McCafé"></div>
+  <div class="drow">
+    <button class="btn" onclick="dlgEquipForm.close()">Annuler</button>
+    <button class="btn p" onclick="submitEquipForm()">Enregistrer</button>
+  </div>
+</dialog>
+
+<dialog id="dlgTaskForm">
+  <h3 id="tkFormTitle">Ajouter une tâche</h3>
+  <div class="field"><label>Nom</label><input id="tkFormNom" placeholder="Ex: Nettoyage condenseur"></div>
+  <div class="field"><label>Fréquence</label>
+    <select id="tkFormFreq">
+      <option value="1">Chaque jour</option>
+      <option value="7" selected>Chaque semaine</option>
+      <option value="15">Tous les 15 jours</option>
+      <option value="30">Chaque mois</option>
+      <option value="60">Tous les 2 mois</option>
+      <option value="90">Tous les 3 mois</option>
+      <option value="120">Tous les 4 mois</option>
+      <option value="180">Tous les 6 mois</option>
+      <option value="365">Chaque année</option>
+      <option value="custom">Autre (en jours)</option>
+    </select>
+  </div>
+  <div class="field" id="tkCustomWrap" style="display:none">
+    <label>Jours</label><input type="number" id="tkFormCustom" min="1" placeholder="Nombre de jours">
+  </div>
+  <div class="field"><label>Responsable</label><input id="tkFormResp" placeholder="Facultatif"></div>
+  <div class="drow">
+    <button class="btn" onclick="dlgTaskForm.close()">Annuler</button>
+    <button class="btn p" onclick="submitTaskForm()">Enregistrer</button>
+  </div>
+</dialog>
+
+<div id="toast"><span id="toastMsg"></span><button class="ubtn" id="toastUndo" hidden onclick="undoLast()">Annuler</button></div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   STORE — lecture/écriture localStorage
+   ══════════════════════════════════════════════════ */
+const KEY = 'entretiens_resto_v2';
+let db;
+
+function loadDB() {
+  try { const s = localStorage.getItem(KEY); if (s) { db = JSON.parse(s); return true; } } catch(e) {}
+  return false;
+}
+function saveDB() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e) { toast('⚠️ Erreur de sauvegarde'); } }
+function emptyDB() {
+  return { version:1, restaurants:[], equipements:[], taches:[], executions:[], remarques_frequentes:[], params:{ joursAlerteOrange:7, utilisateurCourant:'' } };
+}
+
+/* ══════════════════════════════════════════════════
+   HELPERS
+   ══════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const iso = d => d.toISOString().slice(0,10);
+const today = () => iso(new Date());
+function fmt(s) { return s ? s.split('-').reverse().join('.') : '–'; }
+function addDays(s, n) { const d = new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return iso(d); }
+function diffDays(a, b) { return Math.round((new Date(a+'T12:00:00') - new Date(b+'T12:00:00')) / 864e5); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function freqLabel(j, lib) {
+  if (lib) return lib;
+  const map = {1:'Jour',7:'Semaine',15:'15 jours',30:'Mois',60:'2 mois',90:'3 mois',120:'4 mois',180:'6 mois',365:'Année'};
+  return map[j] || j+' j';
+}
+
+function taskStatus(t) {
+  const d = diffDays(t.prochaineEcheance, today());
+  const orange = (db.params && db.params.joursAlerteOrange) || 7;
+  if (d <= 0) return 'late';
+  if (d <= orange) return 'soon';
+  return 'ok';
+}
+function statusLabel(st, ech) {
+  const d = diffDays(ech, today());
+  if (st === 'late') return d === 0 ? "Aujourd'hui" : Math.abs(d)+' j retard';
+  if (st === 'soon') return 'Dans '+d+' j';
+  return 'OK';
+}
+
+function getEquip(id) { return db.equipements.find(e => e.id === id); }
+function getResto(id) { return db.restaurants.find(r => r.id === id); }
+function lastExec(tacheId) {
+  return db.executions.filter(x => x.tacheId === tacheId).sort((a,b) => b.date.localeCompare(a.date))[0];
+}
+function recomputeEcheance(t) {
+  const execs = db.executions.filter(x => x.tacheId === t.id).sort((a,b) => b.date.localeCompare(a.date));
+  if (execs.length > 0) {
+    t.prochaineEcheance = addDays(execs[0].date, t.frequenceJours);
+  } else if (t._origEcheance) {
+    t.prochaineEcheance = t._origEcheance;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   NAVIGATION
+   ══════════════════════════════════════════════════ */
+let curPage = 'pgTodo', curResto = '', curResto2 = '';
+
+function showPage(pg) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  $(pg).classList.add('on');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('on', n.dataset.pg === pg));
+  curPage = pg;
+  if (pg === 'pgTodo') renderTodo();
+  if (pg === 'pgEquip') renderEquipList();
+  if (pg === 'pgSettings') renderSettings();
+  window.scrollTo(0,0);
+}
+
+$('bnav').addEventListener('click', e => {
+  const btn = e.target.closest('.nav-item');
+  if (btn) showPage(btn.dataset.pg);
+});
+
+/* ══════════════════════════════════════════════════
+   PAGE: À FAIRE
+   ══════════════════════════════════════════════════ */
+function getFilteredTasks() {
+  const q = $('qSearch').value.toLowerCase();
+  const fs = $('fStatus').value;
+  const rows = [];
+  db.taches.forEach(t => {
+    if (!t.actif) return;
+    const eq = getEquip(t.equipementId);
+    if (!eq || eq.statut === 'Archivé') return;
+    if (curResto && eq.restaurantId !== curResto) return;
+    const st = taskStatus(t);
+    if (fs && st !== fs) return;
+    const txt = (eq.nom + ' ' + t.nom).toLowerCase();
+    if (q && !txt.includes(q)) return;
+    const le = lastExec(t.id);
+    rows.push({ t, eq, st, lastDate: le ? le.date : '' });
+  });
+  // Sort: late first (by echéance asc), then soon, then ok
+  const ord = { late: 0, soon: 1, ok: 2 };
+  rows.sort((a,b) => {
+    if (ord[a.st] !== ord[b.st]) return ord[a.st] - ord[b.st];
+    return a.t.prochaineEcheance.localeCompare(b.t.prochaineEcheance);
+  });
+  return rows;
+}
+
+function renderRestoTabs(containerId, selected, setter) {
+  let h = `<button class="rtab${selected===''?' on':''}" data-r="">Tous</button>`;
+  db.restaurants.forEach(r => {
+    let late=0, soon=0;
+    db.taches.forEach(t => {
+      if (!t.actif) return;
+      const eq = getEquip(t.equipementId);
+      if (!eq || eq.statut==='Archivé' || eq.restaurantId!==r.id) return;
+      const st = taskStatus(t);
+      if (st==='late') late++; else if (st==='soon') soon++;
+    });
+    h += `<button class="rtab${selected===r.id?' on':''}" data-r="${r.id}">${esc(r.code)} ${esc(r.nom.replace(/^\d+\s*/,''))}`;
+    if (late) h += ` <span class="badge r">${late}</span>`;
+    if (soon) h += ` <span class="badge o">${soon}</span>`;
+    h += '</button>';
+  });
+  $(containerId).innerHTML = h;
+  $(containerId).querySelectorAll('.rtab').forEach(btn => {
+    btn.addEventListener('click', () => { setter(btn.dataset.r); });
+  });
+}
+
+function renderTodo() {
+  renderRestoTabs('rtabs', curResto, r => { curResto = r; renderTodo(); });
+  const rows = getFilteredTasks();
+  const late = rows.filter(r => r.st==='late').length;
+  $('todoCount').textContent = `${rows.length} tâche(s) · ${late} en retard`;
+
+  if (!rows.length) {
+    $('todoList').innerHTML = '<div class="empty"><p>Aucune tâche à afficher.</p></div>';
+    return;
+  }
+
+  let h = '';
+  rows.forEach(r => {
+    const rName = curResto ? '' : (' · '+ (getResto(r.eq.restaurantId)||{}).code||'');
+    h += `<div class="tcard">
+      <span class="pill ${r.st}">${statusLabel(r.st, r.t.prochaineEcheance)}</span>
+      <div class="info">
+        <div class="eq">${esc(r.eq.nom)}</div>
+        <div class="tk">${esc(r.t.nom)}</div>
+        <div class="meta">
+          <span>${freqLabel(r.t.frequenceJours, r.t.frequenceLibelle)}</span>
+          <span>Dernier : ${fmt(r.lastDate)}</span>
+          <span>Prochain : ${fmt(r.t.prochaineEcheance)}${rName}</span>
+        </div>
+      </div>
+      <div class="acts">
+        <button class="btn p sm" onclick="quickDone('${r.t.id}')">✓ Fait</button>
+        <button class="btn sm icon" onclick="openConfirm('${r.t.id}')" title="Options">▾</button>
+      </div>
+    </div>`;
+  });
+  $('todoList').innerHTML = h;
+}
+
+$('qSearch').addEventListener('input', renderTodo);
+$('fStatus').addEventListener('change', renderTodo);
+
+/* ══════════════════════════════════════════════════
+   CONFIRM / EXECUTE
+   ══════════════════════════════════════════════════ */
+let pendingTaskId = null;
+const dlgConfirm = $('dlgConfirm');
+
+function openConfirm(tid) {
+  pendingTaskId = tid;
+  const t = db.taches.find(x => x.id === tid);
+  const eq = getEquip(t.equipementId);
+  $('dlgTitle').textContent = `${eq.nom} — ${t.nom}`;
+  $('dlgDate').value = today();
+  $('dlgType').value = 'Interne';
+  $('dlgFree').value = '';
+  // Remarques
+  let rh = '<option value="">— Aucune —</option>';
+  (db.remarques_frequentes||[]).forEach(r => { rh += `<option>${esc(r)}</option>`; });
+  $('dlgRem').innerHTML = rh;
+  dlgConfirm.showModal();
+}
+
+function submitConfirm() {
+  const rem = $('dlgFree').value.trim() || $('dlgRem').value;
+  if (doExecute(pendingTaskId, $('dlgDate').value, $('dlgType').value, rem)) {
+    dlgConfirm.close();
+  }
+}
+
+function quickDone(tid) {
+  doExecute(tid, today(), 'Interne', '');
+}
+
+let lastUndoId = null, toastTimer = null;
+
+function doExecute(tid, date, type, remarque) {
+  // Anti-doublon
+  if (db.executions.some(x => x.tacheId === tid && x.date === date)) {
+    toast('⚠️ Déjà fait le ' + fmt(date));
+    return false;
+  }
+  const t = db.taches.find(x => x.id === tid);
+  if (!t._origEcheance) t._origEcheance = t.prochaineEcheance;
+  const exec = {
+    id: 'x' + uid(),
+    tacheId: tid,
+    date: date,
+    type: type || 'Interne',
+    remarque: remarque || '',
+    saisiPar: (db.params && db.params.utilisateurCourant) || 'app',
+    creeLe: new Date().toISOString()
+  };
+  db.executions.push(exec);
+  recomputeEcheance(t);
+  saveDB();
+  renderCurrent();
+  lastUndoId = exec.id;
+  toast('✓ Enregistré — prochain : ' + fmt(t.prochaineEcheance), true);
+  return true;
+}
+
+function undoLast() {
+  if (!lastUndoId) return;
+  const idx = db.executions.findIndex(x => x.id === lastUndoId);
+  if (idx < 0) return;
+  const ex = db.executions[idx];
+  db.executions.splice(idx, 1);
+  const t = db.taches.find(x => x.id === ex.tacheId);
+  if (t) recomputeEcheance(t);
+  saveDB();
+  renderCurrent();
+  lastUndoId = null;
+  toast('↩ Annulé');
+}
+
+function deleteExec(xid) {
+  if (!confirm('Supprimer cette exécution ?')) return;
+  const ex = db.executions.find(x => x.id === xid);
+  if (!ex) return;
+  db.executions = db.executions.filter(x => x.id !== xid);
+  const t = db.taches.find(x => x.id === ex.tacheId);
+  if (t) recomputeEcheance(t);
+  saveDB();
+  renderCurrent();
+  toast('Exécution supprimée');
+}
+
+function toast(msg, withUndo) {
+  $('toastMsg').textContent = msg;
+  $('toastUndo').hidden = !withUndo;
+  $('toast').style.display = 'flex';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    $('toast').style.display = 'none';
+    lastUndoId = null;
+  }, withUndo ? 10000 : 3500);
+}
+
+function renderCurrent() {
+  if (curPage === 'pgTodo') renderTodo();
+  else if (curPage === 'pgEquip') renderEquipList();
+  else if (curPage === 'pgDetail') renderDetail(curDetailId);
+  else if (curPage === 'pgSettings') renderSettings();
+}
+
+/* ══════════════════════════════════════════════════
+   PAGE: ÉQUIPEMENTS
+   ══════════════════════════════════════════════════ */
+function renderEquipList() {
+  renderRestoTabs('rtabs2', curResto2, r => { curResto2 = r; renderEquipList(); });
+  const q = $('qEquip').value.toLowerCase();
+  const fc = $('fCat').value;
+
+  // Build category list
+  const cats = new Set();
+  db.equipements.forEach(e => { if (e.categorie) cats.add(e.categorie); });
+  const curCat = $('fCat').value;
+  let ch = '<option value="">Toutes catégories</option>';
+  [...cats].sort().forEach(c => { ch += `<option${c===curCat?' selected':''}>${esc(c)}</option>`; });
+  $('fCat').innerHTML = ch;
+
+  const eqs = db.equipements.filter(e => {
+    if (e.statut === 'Archivé') return false;
+    if (curResto2 && e.restaurantId !== curResto2) return false;
+    if (fc && e.categorie !== fc) return false;
+    if (q && !e.nom.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  $('eqCount').textContent = `${eqs.length} équipement(s)`;
+
+  if (!eqs.length) {
+    $('eqList').innerHTML = '<div class="empty"><p>Aucun équipement.</p></div>';
+    return;
+  }
+
+  let h = '';
+  eqs.forEach(e => {
+    const tasks = db.taches.filter(t => t.equipementId === e.id && t.actif);
+    let late=0, soon=0, ok=0;
+    tasks.forEach(t => { const s = taskStatus(t); if(s==='late')late++; else if(s==='soon')soon++; else ok++; });
+    const r = getResto(e.restaurantId);
+    h += `<div class="eqcard" onclick="showDetail('${e.id}')">
+      <div class="name">${esc(e.nom)}</div>
+      <div class="sub">${r?esc(r.code):''}${e.inventaire?' · N°'+esc(e.inventaire):''}${e.categorie?' · '+esc(e.categorie):''}</div>
+      <div class="badges">
+        ${late?'<span class="badge r">'+late+' retard</span>':''}
+        ${soon?'<span class="badge o">'+soon+' bientôt</span>':''}
+        ${ok?'<span class="badge" style="background:var(--grn)">'+ok+' OK</span>':''}
+      </div>
+    </div>`;
+  });
+  $('eqList').innerHTML = h;
+}
+
+$('qEquip').addEventListener('input', renderEquipList);
+$('fCat').addEventListener('change', renderEquipList);
+
+/* ══════════════════════════════════════════════════
+   PAGE: FICHE ÉQUIPEMENT
+   ══════════════════════════════════════════════════ */
+let curDetailId = '';
+
+function showDetail(eqId) {
+  curDetailId = eqId;
+  renderDetail(eqId);
+  showPage('pgDetail');
+}
+
+function renderDetail(eqId) {
+  const e = getEquip(eqId);
+  if (!e) return;
+  const r = getResto(e.restaurantId);
+  const tasks = db.taches.filter(t => t.equipementId === eqId);
+
+  let h = `<div class="detail-head">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;flex-wrap:wrap">
+      <div>
+        <h3>${esc(e.nom)}</h3>
+        <div class="sub">${r?esc(r.nom):''} ${e.inventaire?'· N°'+esc(e.inventaire):''}${e.categorie?' · '+esc(e.categorie):''} · ${e.statut}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn sm" onclick="editEquip('${e.id}')">✏️ Modifier</button>
+        ${e.statut!=='Archivé'?`<button class="btn sm" onclick="archiveEquip('${e.id}')" style="color:var(--ora)">📦 Archiver</button>`:''}
+      </div>
+    </div>
+  </div>`;
+
+  h += `<div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px">
+    <h2 style="margin:0">Tâches (${tasks.filter(t=>t.actif).length})</h2>
+    <button class="btn sm" onclick="openAddTask('${eqId}')">+ Tâche</button>
+  </div>`;
+
+  tasks.filter(t => t.actif).forEach(t => {
+    const st = taskStatus(t);
+    const execs = db.executions.filter(x => x.tacheId === t.id).sort((a,b) => b.date.localeCompare(a.date));
+    h += `<div class="htask">
+      <div class="hdr">
+        <div>
+          <span class="name">${esc(t.nom)}</span>
+          <span class="pill ${st}" style="margin-left:8px">${statusLabel(st, t.prochaineEcheance)}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:12px;color:var(--tx2)">${freqLabel(t.frequenceJours, t.frequenceLibelle)} · ${fmt(t.prochaineEcheance)}</span>
+          <button class="btn p sm" onclick="quickDone('${t.id}')">✓ Fait</button>
+          <button class="btn sm icon" onclick="openConfirm('${t.id}')">▾</button>
+          <button class="btn sm icon" onclick="archiveTask('${t.id}')" title="Archiver" style="color:var(--ora)">🗑</button>
+        </div>
+      </div>`;
+    if (execs.length) {
+      h += '<div style="margin-top:8px">';
+      execs.slice(0,10).forEach(x => {
+        h += `<div class="hexec">
+          <span><b>${fmt(x.date)}</b> · ${esc(x.type)} · <span style="color:var(--tx2)">${esc(x.remarque||'—')}</span> · ${esc(x.saisiPar||'')}</span>
+          <button class="btn sm icon ghost" onclick="deleteExec('${x.id}')" title="Supprimer">✕</button>
+        </div>`;
+      });
+      if (execs.length > 10) h += `<div style="font-size:12px;color:var(--tx2);padding:6px 0">+ ${execs.length-10} autres…</div>`;
+      h += '</div>';
+    } else {
+      h += '<div style="font-size:13px;color:var(--tx2);padding:8px 0">Aucune exécution enregistrée.</div>';
+    }
+    h += '</div>';
+  });
+
+  const archived = tasks.filter(t => !t.actif);
+  if (archived.length) {
+    h += `<details style="margin-top:12px"><summary style="font-size:13px;color:var(--tx2);cursor:pointer">${archived.length} tâche(s) archivée(s)</summary>`;
+    archived.forEach(t => {
+      h += `<div class="htask" style="opacity:.6"><div class="hdr"><span class="name">${esc(t.nom)}</span> <span style="font-size:12px;color:var(--tx2)">(archivée)</span></div></div>`;
+    });
+    h += '</details>';
+  }
+
+  $('detailContent').innerHTML = h;
+}
+
+/* ══════════════════════════════════════════════════
+   EQUIPMENT FORM
+   ══════════════════════════════════════════════════ */
+const dlgEquipForm = $('dlgEquipForm');
+let editingEquipId = null;
+
+function openAddEquip() {
+  editingEquipId = null;
+  $('eqFormTitle').textContent = 'Ajouter un équipement';
+  let rh = '';
+  db.restaurants.forEach(r => { rh += `<option value="${r.id}">${esc(r.nom)}</option>`; });
+  $('eqFormResto').innerHTML = rh;
+  if (curResto2) $('eqFormResto').value = curResto2;
+  $('eqFormNom').value = '';
+  $('eqFormInv').value = '';
+  $('eqFormCat').value = '';
+  dlgEquipForm.showModal();
+}
+
+function editEquip(eqId) {
+  const e = getEquip(eqId);
+  if (!e) return;
+  editingEquipId = eqId;
+  $('eqFormTitle').textContent = 'Modifier l\'équipement';
+  let rh = '';
+  db.restaurants.forEach(r => { rh += `<option value="${r.id}">${esc(r.nom)}</option>`; });
+  $('eqFormResto').innerHTML = rh;
+  $('eqFormResto').value = e.restaurantId;
+  $('eqFormNom').value = e.nom;
+  $('eqFormInv').value = e.inventaire || '';
+  $('eqFormCat').value = e.categorie || '';
+  dlgEquipForm.showModal();
+}
+
+function submitEquipForm() {
+  const nom = $('eqFormNom').value.trim();
+  if (!nom) { toast('⚠️ Nom requis'); return; }
+  if (editingEquipId) {
+    const e = getEquip(editingEquipId);
+    e.restaurantId = $('eqFormResto').value;
+    e.nom = nom;
+    e.inventaire = $('eqFormInv').value.trim();
+    e.categorie = $('eqFormCat').value.trim();
+  } else {
+    db.equipements.push({
+      id: 'e' + uid(),
+      restaurantId: $('eqFormResto').value,
+      nom: nom,
+      inventaire: $('eqFormInv').value.trim(),
+      categorie: $('eqFormCat').value.trim(),
+      statut: 'Actif'
+    });
+  }
+  saveDB();
+  dlgEquipForm.close();
+  renderCurrent();
+  toast(editingEquipId ? 'Équipement modifié' : 'Équipement ajouté');
+}
+
+function archiveEquip(eqId) {
+  if (!confirm('Archiver cet équipement et toutes ses tâches ?')) return;
+  const e = getEquip(eqId);
+  e.statut = 'Archivé';
+  saveDB();
+  showPage('pgEquip');
+  toast('Équipement archivé');
+}
+
+/* ══════════════════════════════════════════════════
+   TASK FORM
+   ══════════════════════════════════════════════════ */
+const dlgTaskForm = $('dlgTaskForm');
+let taskFormEquipId = '';
+
+function openAddTask(eqId) {
+  taskFormEquipId = eqId;
+  $('tkFormTitle').textContent = 'Ajouter une tâche';
+  $('tkFormNom').value = '';
+  $('tkFormFreq').value = '7';
+  $('tkCustomWrap').style.display = 'none';
+  $('tkFormResp').value = '';
+  dlgTaskForm.showModal();
+}
+
+$('tkFormFreq').addEventListener('change', function() {
+  $('tkCustomWrap').style.display = this.value === 'custom' ? '' : 'none';
+});
+
+function submitTaskForm() {
+  const nom = $('tkFormNom').value.trim();
+  if (!nom) { toast('⚠️ Nom requis'); return; }
+  let freq = parseInt($('tkFormFreq').value);
+  if (isNaN(freq)) freq = parseInt($('tkFormCustom').value);
+  if (!freq || freq < 1) { toast('⚠️ Fréquence invalide'); return; }
+
+  const freqLabels = {1:'Chaque jour',7:'Chaque semaine',15:'Tous les 15 jours',30:'Chaque mois',
+    60:'Tous les 2 mois',90:'Tous les 3 mois',120:'Tous les 4 mois',180:'Tous les 6 mois',365:'Chaque année'};
+
+  db.taches.push({
+    id: 't' + uid(),
+    equipementId: taskFormEquipId,
+    nom: nom,
+    frequenceJours: freq,
+    frequenceLibelle: freqLabels[freq] || freq+' jours',
+    prochaineEcheance: today(),
+    responsable: $('tkFormResp').value.trim(),
+    actif: true
+  });
+  saveDB();
+  dlgTaskForm.close();
+  renderCurrent();
+  toast('Tâche ajoutée');
+}
+
+function archiveTask(tid) {
+  if (!confirm('Archiver cette tâche ?')) return;
+  const t = db.taches.find(x => x.id === tid);
+  if (t) t.actif = false;
+  saveDB();
+  renderCurrent();
+  toast('Tâche archivée');
+}
+
+/* ══════════════════════════════════════════════════
+   PAGE: RÉGLAGES
+   ══════════════════════════════════════════════════ */
+function renderSettings() {
+  // User name
+  $('userName').value = (db.params && db.params.utilisateurCourant) || '';
+
+  // Remarques
+  let rh = '';
+  (db.remarques_frequentes||[]).forEach((r,i) => {
+    rh += `<span class="chip">${esc(r)}<button onclick="removeRemarque(${i})">✕</button></span> `;
+  });
+  $('remList').innerHTML = rh;
+
+  // Stats
+  const active = db.equipements.filter(e => e.statut !== 'Archivé').length;
+  const tasks = db.taches.filter(t => t.actif).length;
+  $('statsInfo').innerHTML = `<p style="font-size:13px;color:var(--tx2);margin:0">
+    ${db.restaurants.length} restaurants · ${active} équipements actifs · ${tasks} tâches actives · ${db.executions.length} exécutions</p>`;
+}
+
+$('userName').addEventListener('change', function() {
+  if (!db.params) db.params = {};
+  db.params.utilisateurCourant = this.value.trim();
+  saveDB();
+});
+
+function addRemarque() {
+  const v = $('newRem').value.trim();
+  if (!v) return;
+  if (!db.remarques_frequentes) db.remarques_frequentes = [];
+  db.remarques_frequentes.push(v);
+  $('newRem').value = '';
+  saveDB();
+  renderSettings();
+}
+function removeRemarque(i) {
+  db.remarques_frequentes.splice(i, 1);
+  saveDB();
+  renderSettings();
+}
+
+/* ══════════════════════════════════════════════════
+   EXPORT
+   ══════════════════════════════════════════════════ */
+function dl(name, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type:mime}));
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function exportJSON() {
+  dl('entretiens_' + today() + '.json', JSON.stringify(db, null, 1), 'application/json');
+  toast('Export JSON téléchargé');
+}
+
+function exportCSV() {
+  const BOM = '﻿';
+  const lines = [['Restaurant','Équipement','Tâche','Fréquence','Dernier entretien','Prochain entretien','À faire']];
+  db.taches.filter(t => t.actif).forEach(t => {
+    const eq = getEquip(t.equipementId);
+    if (!eq || eq.statut==='Archivé') return;
+    const r = getResto(eq.restaurantId);
+    const le = lastExec(t.id);
+    const st = taskStatus(t);
+    lines.push([
+      r ? r.nom : '', eq.nom, t.nom, freqLabel(t.frequenceJours, t.frequenceLibelle),
+      fmt(le ? le.date : ''), fmt(t.prochaineEcheance), st==='ok'?'Non':'Oui'
+    ]);
+  });
+  const csv = lines.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\n');
+  dl('entretiens_' + today() + '.csv', BOM + csv, 'text/csv');
+  toast('Export CSV téléchargé');
+}
+
+function exportExcel() {
+  // Simple XML Spreadsheet (opens in Excel, one sheet per restaurant)
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n';
+  xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
+  xml += '<Styles><Style ss:ID="h"><Font ss:Bold="1"/></Style></Styles>\n';
+
+  db.restaurants.forEach(r => {
+    xml += `<Worksheet ss:Name="${esc(r.code+' '+r.nom.replace(/^\d+\s*/,''))}"><Table>\n`;
+    xml += '<Row ss:StyleID="h"><Cell><Data ss:Type="String">Équipement</Data></Cell><Cell><Data ss:Type="String">Tâche</Data></Cell><Cell><Data ss:Type="String">Fréquence</Data></Cell><Cell><Data ss:Type="String">Dernier entretien</Data></Cell><Cell><Data ss:Type="String">Prochain entretien</Data></Cell><Cell><Data ss:Type="String">À faire</Data></Cell></Row>\n';
+    db.taches.filter(t => t.actif).forEach(t => {
+      const eq = getEquip(t.equipementId);
+      if (!eq || eq.statut==='Archivé' || eq.restaurantId !== r.id) return;
+      const le = lastExec(t.id);
+      const st = taskStatus(t);
+      xml += `<Row><Cell><Data ss:Type="String">${esc(eq.nom)}</Data></Cell><Cell><Data ss:Type="String">${esc(t.nom)}</Data></Cell><Cell><Data ss:Type="String">${esc(freqLabel(t.frequenceJours,t.frequenceLibelle))}</Data></Cell><Cell><Data ss:Type="String">${fmt(le?le.date:'')}</Data></Cell><Cell><Data ss:Type="String">${fmt(t.prochaineEcheance)}</Data></Cell><Cell><Data ss:Type="String">${st==='ok'?'Non':'Oui'}</Data></Cell></Row>\n`;
+    });
+    xml += '</Table></Worksheet>\n';
+  });
+  xml += '</Workbook>';
+  dl('entretiens_' + today() + '.xls', xml, 'application/vnd.ms-excel');
+  toast('Export Excel téléchargé');
+}
+
+/* ══════════════════════════════════════════════════
+   IMPORT
+   ══════════════════════════════════════════════════ */
+let importMode = 'replace';
+
+function triggerImport(mode) {
+  importMode = mode;
+  $('importFile').click();
+}
+
+$('importFile').addEventListener('change', function(ev) {
+  const f = ev.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function() {
+    try {
+      const j = JSON.parse(reader.result);
+      if (!j.restaurants || !j.equipements || !j.taches) throw new Error('Format invalide');
+      if (importMode === 'replace') {
+        if (!confirm('Remplacer toutes les données ?')) return;
+        db = j;
+        if (!db.executions) db.executions = [];
+        if (!db.remarques_frequentes) db.remarques_frequentes = [];
+        if (!db.params) db.params = { joursAlerteOrange: 7, utilisateurCourant: '' };
+      } else {
+        // Merge: add items not already present
+        const existIds = new Set();
+        db.restaurants.forEach(r => existIds.add(r.id));
+        j.restaurants.forEach(r => { if (!existIds.has(r.id)) db.restaurants.push(r); });
+        const eIds = new Set(db.equipements.map(e => e.id));
+        j.equipements.forEach(e => { if (!eIds.has(e.id)) db.equipements.push(e); });
+        const tIds = new Set(db.taches.map(t => t.id));
+        j.taches.forEach(t => { if (!tIds.has(t.id)) db.taches.push(t); });
+        const xKeys = new Set(db.executions.map(x => x.tacheId+'|'+x.date));
+        (j.executions||[]).forEach(x => { if (!xKeys.has(x.tacheId+'|'+x.date)) db.executions.push(x); });
+        (j.remarques_frequentes||[]).forEach(r => {
+          if (!db.remarques_frequentes.includes(r)) db.remarques_frequentes.push(r);
+        });
+      }
+      // Store originals for echeance reset
+      db.taches.forEach(t => { if (!t._origEcheance) t._origEcheance = t.prochaineEcheance; });
+      saveDB();
+      curResto = ''; curResto2 = '';
+      renderCurrent();
+      toast(`Import OK : ${db.taches.length} tâches, ${db.equipements.length} équipements`);
+    } catch(e) {
+      toast('⚠️ Fichier invalide : ' + e.message);
+    }
+  };
+  reader.readAsText(f);
+  ev.target.value = '';
+});
+
+function resetData() {
+  if (!confirm('Supprimer toutes les données ? Cette action est irréversible.')) return;
+  if (!confirm('Vraiment tout supprimer ?')) return;
+  try { localStorage.removeItem(KEY); } catch(e) {}
+  db = emptyDB();
+  saveDB();
+  curResto = ''; curResto2 = '';
+  renderCurrent();
+  toast('Données réinitialisées — importez app_seed.json pour recommencer');
+}
+
+/* ══════════════════════════════════════════════════
+   INIT — load seed on first visit
+   ══════════════════════════════════════════════════ */
+async function init() {
+  if (!loadDB()) {
+    // Try loading seed from same directory
+    try {
+      const res = await fetch('app_seed.json');
+      if (res.ok) {
+        db = await res.json();
+        if (!db.executions) db.executions = [];
+        if (!db.remarques_frequentes) db.remarques_frequentes = [];
+        if (!db.params) db.params = { joursAlerteOrange: 7, utilisateurCourant: '' };
+        db.taches.forEach(t => { t._origEcheance = t.prochaineEcheance; });
+        saveDB();
+        toast('Données chargées : ' + db.taches.length + ' tâches');
+      } else {
+        db = emptyDB();
+        saveDB();
+      }
+    } catch(e) {
+      db = emptyDB();
+      saveDB();
+    }
+  }
+  renderTodo();
+}
+init();
+
+/* ══════════════════════════════════════════════════
+   SERVICE WORKER registration
+   ══════════════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
