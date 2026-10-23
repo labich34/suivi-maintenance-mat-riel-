@@ -623,14 +623,17 @@ function renderEquipList() {
     let late=0, soon=0, ok=0;
     tasks.forEach(t => { const s = taskStatus(t); if(s==='late')late++; else if(s==='soon')soon++; else ok++; });
     const r = getResto(e.restaurantId);
-    h += `<div class="eqcard" onclick="showDetail('${e.id}')">
-      <div class="name">${esc(e.nom)}</div>
-      <div class="sub">${r?esc(r.code):''}${e.inventaire?' · N°'+esc(e.inventaire):''}${e.categorie?' · '+esc(e.categorie):''}</div>
-      <div class="badges">
-        ${late?'<span class="badge r">'+late+' retard</span>':''}
-        ${soon?'<span class="badge o">'+soon+' bientôt</span>':''}
-        ${ok?'<span class="badge" style="background:var(--grn)">'+ok+' OK</span>':''}
+    h += `<div class="eqcard" style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1;min-width:0;cursor:pointer" onclick="showDetail('${e.id}')">
+        <div class="name">${esc(e.nom)}</div>
+        <div class="sub">${r?esc(r.code):''}${e.inventaire?' · N°'+esc(e.inventaire):''}${e.categorie?' · '+esc(e.categorie):''}</div>
+        <div class="badges">
+          ${late?'<span class="badge r">'+late+' retard</span>':''}
+          ${soon?'<span class="badge o">'+soon+' bientôt</span>':''}
+          ${ok?'<span class="badge" style="background:var(--grn)">'+ok+' OK</span>':''}
+        </div>
       </div>
+      <button class="btn sm icon" onclick="event.stopPropagation();archiveEquip('${e.id}')" title="Retirer" style="color:var(--red);flex-shrink:0">✕</button>
     </div>`;
   });
   $('eqList').innerHTML = h;
@@ -685,9 +688,10 @@ function renderDetail(eqId) {
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <span style="font-size:12px;color:var(--tx2)">${freqLabel(t.frequenceJours, t.frequenceLibelle)} · ${fmt(t.prochaineEcheance)}</span>
+          <button class="btn sm icon" onclick="editTask('${t.id}')" title="Modifier fréquence">✏️</button>
           <button class="btn p sm" onclick="quickDone('${t.id}')">✓ Fait</button>
           <button class="btn sm icon" onclick="openConfirm('${t.id}')">▾</button>
-          <button class="btn sm icon" onclick="archiveTask('${t.id}')" title="Archiver" style="color:var(--ora)">🗑</button>
+          <button class="btn sm icon" onclick="archiveTask('${t.id}')" title="Retirer" style="color:var(--red)">✕</button>
         </div>
       </div>`;
     if (execs.length) {
@@ -790,15 +794,40 @@ function archiveEquip(eqId) {
    TASK FORM
    ══════════════════════════════════════════════════ */
 const dlgTaskForm = $('dlgTaskForm');
-let taskFormEquipId = '';
+let taskFormEquipId = '', editingTaskId = null;
+
+const FREQ_LABELS = {1:'Chaque jour',7:'Chaque semaine',15:'Tous les 15 jours',30:'Chaque mois',
+  60:'Tous les 2 mois',90:'Tous les 3 mois',120:'Tous les 4 mois',180:'Tous les 6 mois',365:'Chaque année'};
 
 function openAddTask(eqId) {
+  editingTaskId = null;
   taskFormEquipId = eqId;
   $('tkFormTitle').textContent = 'Ajouter une tâche';
   $('tkFormNom').value = '';
   $('tkFormFreq').value = '7';
   $('tkCustomWrap').style.display = 'none';
   $('tkFormResp').value = '';
+  dlgTaskForm.showModal();
+}
+
+function editTask(tid) {
+  const t = db.taches.find(x => x.id === tid);
+  if (!t) return;
+  editingTaskId = tid;
+  taskFormEquipId = t.equipementId;
+  $('tkFormTitle').textContent = 'Modifier la tâche';
+  $('tkFormNom').value = t.nom;
+  $('tkFormResp').value = t.responsable || '';
+  // Match freq to select
+  const stdFreqs = [1,7,15,30,60,90,120,180,365];
+  if (stdFreqs.includes(t.frequenceJours)) {
+    $('tkFormFreq').value = String(t.frequenceJours);
+    $('tkCustomWrap').style.display = 'none';
+  } else {
+    $('tkFormFreq').value = 'custom';
+    $('tkCustomWrap').style.display = '';
+    $('tkFormCustom').value = t.frequenceJours;
+  }
   dlgTaskForm.showModal();
 }
 
@@ -813,23 +842,35 @@ function submitTaskForm() {
   if (isNaN(freq)) freq = parseInt($('tkFormCustom').value);
   if (!freq || freq < 1) { toast('⚠️ Fréquence invalide'); return; }
 
-  const freqLabels = {1:'Chaque jour',7:'Chaque semaine',15:'Tous les 15 jours',30:'Chaque mois',
-    60:'Tous les 2 mois',90:'Tous les 3 mois',120:'Tous les 4 mois',180:'Tous les 6 mois',365:'Chaque année'};
-
-  db.taches.push({
-    id: 't' + uid(),
-    equipementId: taskFormEquipId,
-    nom: nom,
-    frequenceJours: freq,
-    frequenceLibelle: freqLabels[freq] || freq+' jours',
-    prochaineEcheance: today(),
-    responsable: $('tkFormResp').value.trim(),
-    actif: true
-  });
-  saveDB();
-  dlgTaskForm.close();
-  renderCurrent();
-  toast('Tâche ajoutée');
+  if (editingTaskId) {
+    const t = db.taches.find(x => x.id === editingTaskId);
+    if (t) {
+      t.nom = nom;
+      t.frequenceJours = freq;
+      t.frequenceLibelle = FREQ_LABELS[freq] || freq+' jours';
+      t.responsable = $('tkFormResp').value.trim();
+      recomputeEcheance(t);
+    }
+    saveDB();
+    dlgTaskForm.close();
+    renderCurrent();
+    toast('Tâche modifiée — fréquence : ' + (FREQ_LABELS[freq] || freq+' jours'));
+  } else {
+    db.taches.push({
+      id: 't' + uid(),
+      equipementId: taskFormEquipId,
+      nom: nom,
+      frequenceJours: freq,
+      frequenceLibelle: FREQ_LABELS[freq] || freq+' jours',
+      prochaineEcheance: today(),
+      responsable: $('tkFormResp').value.trim(),
+      actif: true
+    });
+    saveDB();
+    dlgTaskForm.close();
+    renderCurrent();
+    toast('Tâche ajoutée');
+  }
 }
 
 function archiveTask(tid) {
